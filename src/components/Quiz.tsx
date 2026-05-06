@@ -3,6 +3,7 @@ import { Word } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, XCircle, ArrowRight, RefreshCw, Trophy, Headphones } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { getPosColor } from './WordCard';
 
 interface QuizProps {
   words: Word[];

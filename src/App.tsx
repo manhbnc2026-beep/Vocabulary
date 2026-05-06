@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, writeBatch, updateDoc } from 'firebase/firestore';
-import { auth, db, handleFirestoreError } from './lib/firebase';
+import { auth, db, handleFirestoreError, connectionPromise } from './lib/firebase';
 import { cn } from './lib/utils';
 import { Header } from './components/Header';
 import { WordForm } from './components/WordForm';
@@ -48,7 +48,7 @@ export default function App() {
       });
       toast.success('Đã cập nhật tên nhóm!');
     } catch (error) {
-      console.error(error);
+      handleFirestoreError(error, OperationType.UPDATE, `vocab_lists/${selectedUnitId}`);
       toast.error('Lỗi khi cập nhật tên');
     } finally {
       setIsEditingName(false);
@@ -73,6 +73,8 @@ export default function App() {
         ...doc.data()
       })) as VocabList[];
       setUnits(lists);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'vocab_lists');
     });
 
     return () => unsubscribe();
@@ -114,21 +116,17 @@ export default function App() {
   }, [user, selectedUnitId]);
 
   useEffect(() => {
-    if (!user || units.length === 0) return;
-
-    // One-time rename for the "34 words" list if it's generic
-    const updateInitialList = async () => {
-      const initialList = units.find(u => u.wordCount === 34 && (u.name?.toLowerCase().includes('từ vựng') || !u.name));
-      if (initialList && initialList.name !== 'Unit 37') {
-        try {
-          await updateDoc(doc(db, 'vocab_lists', initialList.id), { name: 'Unit 37' });
-        } catch (e) {
-          console.error("Failed to rename initial list", e);
-        }
+    connectionPromise.then(connected => {
+      if (!connected) {
+        toast.error('Không thể kết nối với máy chủ. Vui lòng kiểm tra kết nối mạng của bạn!', {
+          duration: 10000,
+          id: 'conn-error'
+        });
       }
-    };
-    updateInitialList();
-  }, [user, units]);
+    });
+  }, []);
+
+  // Removed old migration logic
 
   const handleProcessWords = async (inputWords: string[], name: string) => {
     if (!user) {
@@ -158,12 +156,18 @@ export default function App() {
       }
 
       // 2. Create Vocab List for this session
-      const listRef = await addDoc(collection(db, 'vocab_lists'), {
-        name,
-        userId: user.uid,
-        createdAt: serverTimestamp(),
-        wordCount: analyzed.length
-      });
+      let listRef;
+      try {
+        listRef = await addDoc(collection(db, 'vocab_lists'), {
+          name,
+          userId: user.uid,
+          createdAt: serverTimestamp(),
+          wordCount: analyzed.length
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, 'vocab_lists');
+        return;
+      }
 
       // 3. Save Words
       toast.loading(`Đang lưu ${analyzed.length} từ vựng...`, { id: 'save-gen' });
@@ -180,7 +184,13 @@ export default function App() {
         });
         updateProgress();
       }
-      await batch.commit();
+      
+      try {
+        await batch.commit();
+        updateProgress(); // Finalize progress
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, 'words/batch');
+      }
 
       toast.success('Đã hoàn thành tạo thẻ từ vựng!', { id: 'save-gen' });
     } catch (error: any) {

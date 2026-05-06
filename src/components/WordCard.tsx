@@ -11,7 +11,7 @@ interface WordCardProps {
   onEdit?: (word: Word) => void;
 }
 
-const getPosColor = (pos?: string) => {
+export const getPosColor = (pos?: string) => {
   if (!pos) return 'bg-gray-50 text-gray-400 border-gray-100';
   const p = pos.toLowerCase();
   if (p.includes('noun') || p === 'n') return 'bg-blue-50 text-blue-600 border-blue-100';
