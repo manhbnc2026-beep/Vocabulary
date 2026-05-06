@@ -1,6 +1,6 @@
 {
   "name": "VocabFlow - Daily English Builder",
   "description": "An AI-powered daily vocabulary learning app that automatically generates phonetics, meanings, and images for new words.",
-  "requestFramePermissions": ["camera"],
+  "requestFramePermissions": [],
   "majorCapabilities": []
 }
