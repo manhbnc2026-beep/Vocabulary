@@ -1,0 +1,46 @@
+{
+  "entities": {
+    "VocabList": {
+      "title": "Vocabulary List",
+      "description": "A collection of words entered in a single session.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "wordCount": { "type": "integer" }
+      },
+      "required": ["userId", "createdAt"]
+    },
+    "Word": {
+      "title": "Vocabulary Word",
+      "description": "Details for a single vocabulary word.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "phonetic": { "type": "string" },
+        "partOfSpeech": { "type": "string" },
+        "meaningVi": { "type": "string" },
+        "examples": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "imageUrl": { "type": "string" },
+        "listId": { "type": "string" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "userId", "listId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/vocab_lists/{listId}": {
+      "schema": "VocabList",
+      "description": "Global user sessions for vocabulary entry."
+    },
+    "/words/{wordId}": {
+      "schema": "Word",
+      "description": "Individual words stored across all sessions."
+    }
+  }
+}

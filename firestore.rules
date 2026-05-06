@@ -1,0 +1,86 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 0.1 Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 1. VocabList Validation
+    function isValidVocabList(data) {
+      return data.keys().hasAll(['userId', 'createdAt', 'wordCount', 'name']) &&
+             data.userId == request.auth.uid &&
+             data.createdAt == request.time &&
+             data.name is string && data.name.size() <= 100 &&
+             data.wordCount is number;
+    }
+
+    match /vocab_lists/{listId} {
+      allow get: if isOwner(existing().userId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(listId) && isValidVocabList(incoming());
+      allow update: if isOwner(existing().userId) && 
+                    incoming().userId == existing().userId &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().name is string && incoming().name.size() <= 100 &&
+                    incoming().wordCount is number;
+      allow delete: if isOwner(existing().userId);
+    }
+
+    // 2. Word Validation
+    function isValidWord(data) {
+      let requiredFields = ['text', 'phonetic', 'partOfSpeech', 'meaningVi', 'examples', 'imageUrl', 'listId', 'userId', 'createdAt'];
+      return data.keys().hasAll(requiredFields) &&
+             data.userId == request.auth.uid &&
+             data.createdAt == request.time &&
+             data.text is string && data.text.size() <= 100 &&
+             data.phonetic is string && data.phonetic.size() <= 100 &&
+             data.partOfSpeech is string && data.partOfSpeech.size() <= 100 &&
+             data.meaningVi is string && data.meaningVi.size() <= 1000 &&
+             data.examples is list && data.examples.size() <= 5 &&
+             data.imageUrl is string && data.imageUrl.size() <= 2048 &&
+             data.listId is string &&
+             (!data.keys().hasAny(['imagePrompt']) || (data.imagePrompt is string && data.imagePrompt.size() <= 500)) &&
+             exists(/databases/$(database)/documents/vocab_lists/$(data.listId));
+    }
+
+    match /words/{wordId} {
+      allow get: if isOwner(existing().userId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(wordId) && isValidWord(incoming());
+      allow update: if isOwner(existing().userId) &&
+                    incoming().userId == existing().userId &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().listId == existing().listId &&
+                    incoming().text is string && incoming().text.size() <= 100 &&
+                    incoming().phonetic is string && incoming().phonetic.size() <= 100 &&
+                    incoming().partOfSpeech is string && incoming().partOfSpeech.size() <= 100 &&
+                    incoming().meaningVi is string && incoming().meaningVi.size() <= 1000 &&
+                    incoming().examples is list && incoming().examples.size() <= 5 &&
+                    incoming().imageUrl is string && incoming().imageUrl.size() <= 2048 &&
+                    (!incoming().keys().hasAny(['imagePrompt']) || (incoming().imagePrompt is string && incoming().imagePrompt.size() <= 500));
+      allow delete: if isOwner(existing().userId);
+    }
+  }
+}
