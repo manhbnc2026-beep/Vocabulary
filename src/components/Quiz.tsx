@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Word } from '../types';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db, auth, handleFirestoreError } from '../lib/firebase';
+import { Word, OperationType } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, XCircle, ArrowRight, RefreshCw, Trophy, Headphones } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -137,12 +139,24 @@ export function Quiz({ words, onClose }: QuizProps) {
     }
   };
 
-  const nextQuestion = () => {
+  const nextQuestion = async () => {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(i => i + 1);
       setSelectedAnswer(null);
     } else {
       setIsFinished(true);
+      if (auth.currentUser && mode !== 'cards') {
+        try {
+          await addDoc(collection(db, 'quiz_sessions'), {
+            userId: auth.currentUser.uid,
+            score,
+            total: questions.length,
+            timestamp: serverTimestamp()
+          });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.WRITE, 'quiz_sessions');
+        }
+      }
     }
   };
 

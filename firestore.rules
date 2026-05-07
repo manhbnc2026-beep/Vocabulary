@@ -20,6 +20,24 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isSuperAdmin() {
+      return isSignedIn() && request.auth.token.email == 'manhbnc2026@gmail.com' && request.auth.token.email_verified == true;
+    }
+
+    function isWhitelisted() {
+      return isSuperAdmin() || exists(/databases/$(database)/documents/allowed_users/$(request.auth.token.email.lower()));
+    }
+
+    function isAuthorizedForApp(appId) {
+      return isSuperAdmin() || (isSignedIn() && exists(/databases/$(database)/documents/allowed_users/$(request.auth.token.email.lower())) && 
+             (get(/databases/$(database)/documents/allowed_users/$(request.auth.token.email.lower())).data.role == 'admin' || 
+              appId in get(/databases/$(database)/documents/allowed_users/$(request.auth.token.email.lower())).data.authorizedApps));
+    }
+
+    function isAdmin() {
+      return isSuperAdmin() || get(/databases/$(database)/documents/allowed_users/$(request.auth.token.email.lower())).data.role == 'admin';
+    }
+
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
@@ -42,15 +60,15 @@ service cloud.firestore {
     }
 
     match /vocab_lists/{listId} {
-      allow get: if isOwner(existing().userId);
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && isValidId(listId) && isValidVocabList(incoming());
-      allow update: if isOwner(existing().userId) && 
+      allow get: if isAuthorizedForApp('vocab-flow') && isOwner(existing().userId);
+      allow list: if isAuthorizedForApp('vocab-flow') && resource.data.userId == request.auth.uid;
+      allow create: if isAuthorizedForApp('vocab-flow') && isValidId(listId) && isValidVocabList(incoming());
+      allow update: if isAuthorizedForApp('vocab-flow') && isOwner(existing().userId) && 
                     incoming().userId == existing().userId &&
                     incoming().createdAt == existing().createdAt &&
                     incoming().name is string && incoming().name.size() <= 100 &&
                     incoming().wordCount is number;
-      allow delete: if isOwner(existing().userId);
+      allow delete: if isAuthorizedForApp('vocab-flow') && isOwner(existing().userId);
     }
 
     // 2. Word Validation
@@ -71,10 +89,10 @@ service cloud.firestore {
     }
 
     match /words/{wordId} {
-      allow get: if isOwner(existing().userId);
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && isValidId(wordId) && isValidWord(incoming());
-      allow update: if isOwner(existing().userId) &&
+      allow get: if isAuthorizedForApp('vocab-flow') && isOwner(existing().userId);
+      allow list: if isAuthorizedForApp('vocab-flow') && resource.data.userId == request.auth.uid;
+      allow create: if isAuthorizedForApp('vocab-flow') && isValidId(wordId) && isValidWord(incoming());
+      allow update: if isAuthorizedForApp('vocab-flow') && isOwner(existing().userId) &&
                     incoming().userId == existing().userId &&
                     incoming().createdAt == existing().createdAt &&
                     incoming().listId == existing().listId &&
@@ -85,7 +103,46 @@ service cloud.firestore {
                     incoming().examples is list && incoming().examples.size() <= 5 &&
                     incoming().imageUrl is string && incoming().imageUrl.size() <= 2048 &&
                     (!incoming().keys().hasAny(['imagePrompt']) || (incoming().imagePrompt is string && incoming().imagePrompt.size() <= 500));
-      allow delete: if isOwner(existing().userId);
+      allow delete: if isAuthorizedForApp('vocab-flow') && isOwner(existing().userId);
+    }
+
+    // 3. User Management
+    match /allowed_users/{email} {
+      allow get: if isSignedIn() && (request.auth.token.email.lower() == email.lower() || isAdmin());
+      allow list: if isAdmin();
+      allow create, update: if isAdmin() && email != 'manhbnc2026@gmail.com' &&
+                            incoming().role in ['admin', 'user'] &&
+                            incoming().addedAt == request.time &&
+                            incoming().authorizedApps is list;
+      allow delete: if isAdmin() && email != 'manhbnc2026@gmail.com';
+    }
+
+    match /access_requests/{email} {
+      allow get: if isSignedIn() && (request.auth.token.email.lower() == email.lower() || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && request.auth.token.email.lower() == email.lower() &&
+                    incoming().status == 'pending' &&
+                    incoming().requestedAt == request.time;
+      allow delete: if isAdmin();
+    }
+
+    match /quiz_sessions/{sessionId} {
+      allow get: if isAuthorizedForApp('vocab-flow') && isOwner(existing().userId);
+      allow list: if isAuthorizedForApp('vocab-flow') && resource.data.userId == request.auth.uid;
+      allow create: if isAuthorizedForApp('vocab-flow') && incoming().userId == request.auth.uid &&
+                    incoming().timestamp == request.time;
+      allow update, delete: if false;
+    }
+
+    match /apps/{appId} {
+      allow read: if isSignedIn();
+      allow create, update: if isAdmin() && 
+                            incoming().name is string && incoming().name.size() <= 100 &&
+                            incoming().description is string && incoming().description.size() <= 500 &&
+                            incoming().icon is string &&
+                            incoming().color is string &&
+                            incoming().createdAt == request.time;
+      allow delete: if isAdmin();
     }
   }
 }

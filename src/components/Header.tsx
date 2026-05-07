@@ -1,23 +1,38 @@
-import { BookOpen, User, LogOut, LogIn } from 'lucide-react';
+import { BookOpen, User, LogOut, LogIn, Sparkles, LayoutTemplate } from 'lucide-react';
 import { auth, signInWithGoogle } from '../lib/firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
 
-export function Header() {
+export function Header({ currentAppId, onBack }: { currentAppId?: string | null, onBack?: () => void }) {
   const [user] = useAuthState(auth);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-black/5 bg-white/70 backdrop-blur-xl">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-200">
-            <BookOpen size={24} />
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 cursor-pointer group" onClick={() => onBack?.()}>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-200 group-hover:scale-110 transition-transform">
+              <Sparkles size={24} />
+            </div>
+            <div>
+              <h1 className="font-sans text-xl font-bold tracking-tight text-gray-900">manhbnc2026</h1>
+              <p className="text-[10px] font-medium uppercase tracking-widest text-indigo-600/60">Ecosystem</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-sans text-xl font-bold tracking-tight text-gray-900">VocabFlow</h1>
-            <p className="text-[10px] font-medium uppercase tracking-widest text-indigo-600/60">Daily Builder</p>
-          </div>
+
+          {currentAppId && (
+            <div className="flex items-center gap-3 animate-in fade-in slide-in-from-left-4 duration-500">
+              <div className="h-4 w-px bg-gray-200" />
+              <button 
+                onClick={onBack}
+                className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-indigo-600 transition-colors"
+              >
+                <LayoutTemplate size={16} />
+                Hub
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-4">

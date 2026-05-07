@@ -45,3 +45,33 @@ export interface FirestoreErrorInfo {
     }[];
   }
 }
+
+export interface AllowedUser {
+  email: string;
+  role: 'admin' | 'user';
+  addedAt: any;
+  authorizedApps: string[];
+}
+
+export interface EcosystemApp {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  createdAt: any;
+}
+
+export interface QuizSession {
+  id: string;
+  userId: string;
+  score: number;
+  total: number;
+  timestamp: any;
+}
+
+export interface AccessRequest {
+  email: string;
+  requestedAt: any;
+  status: 'pending';
+}

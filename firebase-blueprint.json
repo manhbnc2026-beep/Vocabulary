@@ -41,6 +41,60 @@
     "/words/{wordId}": {
       "schema": "Word",
       "description": "Individual words stored across all sessions."
+    },
+    "/allowed_users/{email}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "role": { "type": "string", "enum": ["admin", "user"] },
+          "addedAt": { "type": "string", "format": "date-time" },
+          "authorizedApps": { 
+            "type": "array", 
+            "items": { "type": "string" },
+            "description": "List of app IDs this user can access (e.g., ['vocab-flow'])"
+          }
+        },
+        "required": ["role", "addedAt", "authorizedApps"]
+      },
+      "description": "Whitelist of users and their specific app permissions."
+    },
+    "/access_requests/{email}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "requestedAt": { "type": "string", "format": "date-time" },
+          "status": { "type": "string", "enum": ["pending"] }
+        },
+        "required": ["requestedAt", "status"]
+      },
+      "description": "Users who have requested access and are waiting for approval."
+    },
+    "/quiz_sessions/{sessionId}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "userId": { "type": "string" },
+          "score": { "type": "number" },
+          "total": { "type": "number" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        },
+        "required": ["userId", "score", "total", "timestamp"]
+      },
+      "description": "Historical quiz results for each user."
+    },
+    "/apps/{appId}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "icon": { "type": "string" },
+          "color": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["name", "description", "icon", "color", "createdAt"]
+      },
+      "description": "Dynamic list of applications available in the ecosystem."
     }
   }
 }
