@@ -400,15 +400,6 @@ export default function App() {
     }
   };
 
-  const handleDeleteWord = async (id: string) => {
-    try {
-      await deleteDoc(doc(db, 'words', id));
-      toast.success('Đã xóa từ vựng');
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `words/${id}`);
-    }
-  };
-
   const handleAddApp = async () => {
     if (!newApp.name.trim() || !newApp.description.trim()) {
       toast.error('Vui lòng điền đầy đủ thông tin');
@@ -446,24 +437,42 @@ export default function App() {
   };
 
   const handleUpdateMissingImages = async () => {
-    const wordsWithNoImage = words.filter(w => !w.imageUrl || String(w.imageUrl).includes('undefined') || String(w.imageUrl).trim() === '');
+    const wordsWithNoImage = words.filter(w => 
+      !w.imageUrl || 
+      String(w.imageUrl).includes('undefined') || 
+      String(w.imageUrl).trim() === '' ||
+      String(w.imageUrl).includes('placehold.co')
+    );
+    
     if (wordsWithNoImage.length === 0) {
       toast('Tất cả từ vựng hiện tại đều đã có hình ảnh.');
       return;
     }
 
-    if (!window.confirm(`Tìm thấy ${wordsWithNoImage.length} từ chưa có hình ảnh. Bạn có muốn cập nhật tự động bằng AI không?`)) return;
+    if (!window.confirm(`Tìm thấy ${wordsWithNoImage.length} từ chưa có hình ảnh hoặc ảnh mô tả kém. Bạn có muốn sử dụng AI để tạo hình ảnh minh họa sinh động không?`)) return;
 
     setIsProcessing(true);
     setProgress(0);
     let updatedCount = 0;
 
     try {
+      // Group words to process in small batches if we wanted to use Gemini, 
+      // but here we just update URLs using existing prompts or text.
+      // To make it "described by images" as the user wants, we ensure the prompt is descriptive.
+      
       for (const word of wordsWithNoImage) {
-        const prompt = word.imagePrompt || word.text;
+        // If imagePrompt is too short or missing, we try to construct a better one from the word and meaning
+        let prompt = word.imagePrompt;
+        if (!prompt || prompt.length < 10) {
+          prompt = `A vivid, high-quality photograph or 3D digital art representing the English word "${word.text}", showing the concept in clear context. Minimalist, centered, professional lighting.`;
+        }
+        
         const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random() * 1000000)}`;
         
-        await updateDoc(doc(db, 'words', word.id), { imageUrl });
+        await updateDoc(doc(db, 'words', word.id), { 
+          imageUrl,
+          imagePrompt: prompt // Save the improved prompt too
+        });
         updatedCount++;
         setProgress(Math.round((updatedCount / wordsWithNoImage.length) * 100));
       }
@@ -680,9 +689,9 @@ export default function App() {
                       </section>
                       <section>
                         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                          <div className="flex items-center gap-3"><div className="h-1 w-12 bg-indigo-600 rounded-full" /><h2 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-3">Thư viện từ vựng<span className="text-xs font-mono font-bold bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100">{words.length} từ</span></h2></div>
+                          <div className="flex items-center gap-3"><div className="h-1 w-12 bg-indigo-600 rounded-full" /><h2 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-3">Thư viện từ vựng<span className="text-xs font-mono font-bold bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100">{selectedUnitId === 'all' ? units.reduce((acc, u) => acc + (u.wordCount || 0), 0) : words.length} từ</span></h2></div>
                           <div className="flex items-center gap-4">
-                            {words.some(w => !w.imageUrl || String(w.imageUrl).includes('undefined') || String(w.imageUrl).trim() === '') && (
+                            {words.some(w => !w.imageUrl || String(w.imageUrl).includes('undefined') || String(w.imageUrl).trim() === '' || String(w.imageUrl).includes('placehold.co')) && (
                               <button
                                 onClick={handleUpdateMissingImages}
                                 disabled={isProcessing}
@@ -704,8 +713,12 @@ export default function App() {
                               ) : (
                                 <div className="flex items-center gap-2">
                                   <select value={selectedUnitId} onChange={(e) => setSelectedUnitId(e.target.value)} className="text-xs font-bold bg-transparent outline-none text-gray-600 cursor-pointer pr-2">
-                                    <option value="all">Tất cả Unit</option>
-                                    {units.map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}
+                                    <option value="all">Tất cả Unit ({units.reduce((acc, u) => acc + (u.wordCount || 0), 0)})</option>
+                                    {units.map(unit => (
+                                      <option key={unit.id} value={unit.id}>
+                                        {unit.name} ({unit.wordCount || 0})
+                                      </option>
+                                    ))}
                                   </select>
                                   {selectedUnitId !== 'all' && <button onClick={handleStartEditingName} className="text-indigo-300 hover:text-indigo-600"><Edit2 size={12} /></button>}
                                 </div>
@@ -713,7 +726,7 @@ export default function App() {
                             </div>
                           </div>
                         </div>
-                        <WordList words={words} onDelete={handleDeleteWord} onEdit={setEditingWord} isLoading={isLoading} />
+                        <WordList words={words} onEdit={setEditingWord} isLoading={isLoading} />
                       </section>
                     </motion.div>
                   ) : activeTab === 'practice' ? (

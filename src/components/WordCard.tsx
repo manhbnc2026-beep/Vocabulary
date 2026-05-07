@@ -7,7 +7,6 @@ import { cn } from '../lib/utils';
 interface WordCardProps {
   key?: string;
   word: Word;
-  onDelete?: (id: string) => void;
   onEdit?: (word: Word) => void;
 }
 
@@ -21,7 +20,7 @@ export const getPosColor = (pos?: string) => {
   return 'bg-gray-50 text-gray-400 border-gray-100';
 };
 
-export function WordCard({ word, onDelete, onEdit }: WordCardProps) {
+export function WordCard({ word, onEdit }: WordCardProps) {
   const speak = () => {
     const utterance = new SpeechSynthesisUtterance(word.text);
     utterance.lang = 'en-US';
@@ -64,20 +63,15 @@ export function WordCard({ word, onDelete, onEdit }: WordCardProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
         <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
-          <button
-            onClick={() => onEdit?.(word)}
-            className="p-2.5 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/30 hover:bg-white hover:text-indigo-600 transition-all opacity-0 group-hover:opacity-100"
-            title="Chỉnh sửa từ"
-          >
-            <Edit2 size={16} />
-          </button>
-          <button
-            onClick={() => onDelete?.(word.id)}
-            className="p-2.5 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/30 hover:bg-red-500 hover:border-red-500 transition-all opacity-0 group-hover:opacity-100"
-            title="Xóa từ"
-          >
-            <Trash2 size={16} />
-          </button>
+          {onEdit && (
+            <button
+              onClick={() => onEdit(word)}
+              className="p-2.5 rounded-full bg-white/90 backdrop-blur-md text-indigo-600 border border-indigo-100 shadow-xl hover:bg-indigo-600 hover:text-white transition-all transform hover:scale-110 active:scale-95"
+              title="Chỉnh sửa từ"
+            >
+              <Edit2 size={16} />
+            </button>
+          )}
         </div>
       </div>
 

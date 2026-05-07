@@ -6,12 +6,11 @@ import { Trash2, Book } from 'lucide-react';
 
 interface WordListProps {
   words: Word[];
-  onDelete: (id: string) => void;
   onEdit: (word: Word) => void;
   isLoading: boolean;
 }
 
-export function WordList({ words, onDelete, onEdit, isLoading }: WordListProps) {
+export function WordList({ words, onEdit, isLoading }: WordListProps) {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -39,7 +38,7 @@ export function WordList({ words, onDelete, onEdit, isLoading }: WordListProps) 
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
       <AnimatePresence mode="popLayout">
         {words.map((word) => (
-          <WordCard key={word.id} word={word} onDelete={onDelete} onEdit={onEdit} />
+          <WordCard key={word.id} word={word} onEdit={onEdit} />
         ))}
       </AnimatePresence>
     </div>
