@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, writeBatch, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, writeBatch, updateDoc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, connectionPromise } from './lib/firebase';
 import { cn } from './lib/utils';
 import { Header } from './components/Header';
@@ -100,32 +100,48 @@ export default function App() {
   // Listen to dynamic apps
   useEffect(() => {
     const q = query(collection(db, 'apps'), orderBy('createdAt', 'asc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
       const apps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as EcosystemApp[];
       setEcosystemApps(apps);
       
-      if (apps.length === 0 && user?.email === ADMIN_EMAIL) {
-        const initialApps = [
-          {
-            name: 'VocabFlow',
-            description: 'AI-powered English vocabulary builder with smart analysis.',
-            icon: 'GraduationCap',
-            color: 'indigo'
-          },
-          {
-            name: 'QuickChat',
-            description: 'Fast, secure AI assistant for daily tasks (Coming Soon).',
-            icon: 'MessageSquare',
-            color: 'emerald'
+      // Ensure core apps exist with correct IDs for Admin
+      if (user?.email === ADMIN_EMAIL) {
+        const hasVocabFlow = apps.some(app => app.id === 'vocab-flow');
+        if (!hasVocabFlow) {
+          const initialApps = [
+            {
+              id: 'vocab-flow',
+              name: 'VocabFlow',
+              description: 'AI-powered English vocabulary builder with smart analysis.',
+              icon: 'GraduationCap',
+              color: 'indigo'
+            },
+            {
+              id: 'ai-chat',
+              name: 'QuickChat',
+              description: 'Fast, secure AI assistant for daily tasks (Coming Soon).',
+              icon: 'MessageSquare',
+              color: 'emerald'
+            }
+          ];
+          
+          for (const app of initialApps) {
+            const { id, ...appData } = app;
+            await setDoc(doc(db, 'apps', id), {
+              ...appData,
+              createdAt: serverTimestamp()
+            });
           }
-        ];
-        
-        initialApps.forEach(app => {
-          addDoc(collection(db, 'apps'), {
-            ...app,
-            createdAt: serverTimestamp()
-          });
-        });
+          
+          // Cleanup any apps with random IDs but same names to avoid duplicates
+          const duplicates = apps.filter(app => 
+            (app.name === 'VocabFlow' || app.name === 'QuickChat') && 
+            app.id !== 'vocab-flow' && app.id !== 'ai-chat'
+          );
+          for (const dep of duplicates) {
+            await deleteDoc(doc(db, 'apps', dep.id));
+          }
+        }
       }
     });
 
