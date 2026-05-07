@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { X, Save, Loader2, Info } from 'lucide-react';
+import { X, Save, Loader2, Info, RefreshCw, Image as ImageIcon } from 'lucide-react';
 import { Word } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
+import { toast } from 'react-hot-toast';
 
 interface WordEditModalProps {
   word: Word;
@@ -18,8 +19,11 @@ export function WordEditModal({ word, isOpen, onClose, onSave }: WordEditModalPr
     partOfSpeech: word.partOfSpeech,
     meaningVi: word.meaningVi,
     examples: [...word.examples],
+    imageUrl: word.imageUrl || '',
+    imagePrompt: word.imagePrompt || word.text,
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -29,6 +33,20 @@ export function WordEditModal({ word, isOpen, onClose, onSave }: WordEditModalPr
     const newExamples = [...formData.examples];
     newExamples[index] = value;
     setFormData(prev => ({ ...prev, examples: newExamples }));
+  };
+
+  const handleRegenerateImage = () => {
+    setIsRegenerating(true);
+    try {
+      const prompt = formData.imagePrompt || formData.text;
+      const newUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random() * 1000000)}`;
+      setFormData(prev => ({ ...prev, imageUrl: newUrl }));
+      toast.success('Đã làm mới hình ảnh!');
+    } catch (error) {
+      toast.error('Lỗi khi làm mới hình ảnh');
+    } finally {
+      setTimeout(() => setIsRegenerating(false), 500);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -53,7 +71,7 @@ export function WordEditModal({ word, isOpen, onClose, onSave }: WordEditModalPr
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="w-full max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden shadow-indigo-200/50"
+          className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden shadow-indigo-200/50"
         >
           <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-indigo-50/30">
             <div>
@@ -68,71 +86,124 @@ export function WordEditModal({ word, isOpen, onClose, onSave }: WordEditModalPr
             </button>
           </div>
 
-          <form onSubmit={handleSave} className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            {/* Image Preview & Edit */}
+            <div className="p-6 bg-gray-50 border-r border-gray-100 flex flex-col gap-4">
+              <div className="aspect-square w-full rounded-2xl bg-white border border-gray-200 shadow-inner overflow-hidden relative group">
+                {formData.imageUrl ? (
+                  <img 
+                    src={formData.imageUrl} 
+                    alt="Preview" 
+                    className={cn("w-full h-full object-cover transition-opacity", isRegenerating && "opacity-50")}
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center bg-indigo-50/30">
+                    <span className="text-indigo-600 font-black text-2xl uppercase tracking-widest break-words leading-tight">
+                      {formData.text}
+                    </span>
+                  </div>
+                )}
+                {isRegenerating && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/40">
+                    <RefreshCw className="animate-spin text-indigo-600" size={32} />
+                  </div>
+                )}
+              </div>
+              
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Prompt tạo hình ảnh (Tiếng Anh)</label>
+                  <textarea
+                    value={formData.imagePrompt}
+                    onChange={(e) => handleChange('imagePrompt', e.target.value)}
+                    rows={3}
+                    className="w-full rounded-xl bg-white border border-gray-200 px-4 py-2.5 text-xs font-medium focus:ring-2 focus:ring-indigo-500/10 focus:outline-none transition-all resize-none"
+                    placeholder="Describe the image context..."
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRegenerateImage}
+                  disabled={isRegenerating}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white border border-gray-200 text-indigo-600 font-bold text-xs hover:border-indigo-600 transition-all active:scale-95 disabled:opacity-50 shadow-sm"
+                >
+                  <RefreshCw size={14} className={cn(isRegenerating && "animate-spin")} />
+                  Tạo lại hình ảnh
+                </button>
+                <div className="space-y-1.5 pt-2">
+                   <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Hoặc dán URL hình ảnh</label>
+                   <input
+                    type="text"
+                    value={formData.imageUrl}
+                    onChange={(e) => handleChange('imageUrl', e.target.value)}
+                    className="w-full rounded-xl bg-white border border-gray-200 px-4 py-2 text-[10px] font-medium text-gray-500 focus:outline-none"
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Form Fields */}
+            <form onSubmit={handleSave} className="p-6 space-y-5 max-h-[70vh] overflow-y-auto custom-scrollbar">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Từ vựng</label>
+                  <input
+                    type="text"
+                    value={formData.text}
+                    onChange={(e) => handleChange('text', e.target.value)}
+                    className="w-full rounded-xl bg-gray-50 border border-gray-100 px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:outline-none transition-all"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Phát âm</label>
+                  <input
+                    type="text"
+                    value={formData.phonetic}
+                    onChange={(e) => handleChange('phonetic', e.target.value)}
+                    className="w-full rounded-xl bg-gray-50 border border-gray-100 px-4 py-2.5 text-sm font-mono focus:ring-2 focus:ring-indigo-500/10 focus:outline-none transition-all"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Từ vựng</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Từ loại</label>
                 <input
                   type="text"
-                  value={formData.text}
-                  onChange={(e) => handleChange('text', e.target.value)}
+                  value={formData.partOfSpeech}
+                  onChange={(e) => handleChange('partOfSpeech', e.target.value)}
                   className="w-full rounded-xl bg-gray-50 border border-gray-100 px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:outline-none transition-all"
                 />
               </div>
+
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Phát âm</label>
-                <input
-                  type="text"
-                  value={formData.phonetic}
-                  onChange={(e) => handleChange('phonetic', e.target.value)}
-                  className="w-full rounded-xl bg-gray-50 border border-gray-100 px-4 py-2.5 text-sm font-mono focus:ring-2 focus:ring-indigo-500/10 focus:outline-none transition-all"
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Nghĩa tiếng Việt</label>
+                <textarea
+                  value={formData.meaningVi}
+                  onChange={(e) => handleChange('meaningVi', e.target.value)}
+                  rows={2}
+                  className="w-full rounded-xl bg-gray-50 border border-gray-100 px-4 py-2.5 text-sm font-bold resize-none focus:ring-2 focus:ring-indigo-500/10 focus:outline-none transition-all"
                 />
               </div>
-            </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Từ loại (Ví dụ: Noun, Verb...)</label>
-              <input
-                type="text"
-                value={formData.partOfSpeech}
-                onChange={(e) => handleChange('partOfSpeech', e.target.value)}
-                className="w-full rounded-xl bg-gray-50 border border-gray-100 px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-indigo-500/10 focus:outline-none transition-all"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Nghĩa tiếng Việt</label>
-              <textarea
-                value={formData.meaningVi}
-                onChange={(e) => handleChange('meaningVi', e.target.value)}
-                rows={2}
-                className="w-full rounded-xl bg-gray-50 border border-gray-100 px-4 py-2.5 text-sm font-bold resize-none focus:ring-2 focus:ring-indigo-500/10 focus:outline-none transition-all"
-              />
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Câu ví dụ</label>
-                <div className="flex items-center gap-1.5 text-[9px] text-gray-400">
-                  <Info size={12} />
-                  <span>Dạng: Câu tiếng Anh (Nghĩa tiếng Việt)</span>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Câu ví dụ</label>
                 </div>
-              </div>
-              {formData.examples.map((ex, i) => (
-                <div key={i} className="relative">
-                  <textarea
-                    value={ex}
-                    onChange={(e) => handleExampleChange(i, e.target.value)}
-                    rows={2}
-                    className="w-full rounded-xl bg-gray-50 border border-gray-100 px-4 py-2.5 text-xs font-medium italic text-gray-600 focus:ring-2 focus:ring-indigo-500/10 focus:outline-none transition-all resize-none"
-                  />
-                  <div className="absolute top-2 right-2 h-4 w-4 rounded-full bg-indigo-50 flex items-center justify-center text-[10px] font-bold text-indigo-400">
-                    {i + 1}
+                {formData.examples.map((ex, i) => (
+                  <div key={i} className="relative">
+                    <textarea
+                      value={ex}
+                      onChange={(e) => handleExampleChange(i, e.target.value)}
+                      rows={2}
+                      className="w-full rounded-xl bg-gray-50 border border-gray-100 px-4 py-2 text-xs font-medium italic text-gray-600 focus:outline-none resize-none"
+                    />
                   </div>
-                </div>
-              ))}
-            </div>
-          </form>
+                ))}
+              </div>
+            </form>
+          </div>
 
           <div className="p-6 bg-gray-50/50 flex items-center justify-end gap-3 border-t border-gray-100">
             <button

@@ -12,7 +12,7 @@ import { Word, VocabList, OperationType, AllowedUser, AccessRequest, QuizSession
 import { analyzeWords } from './services/geminiService';
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, History, GraduationCap, LayoutGrid, Filter, Edit2, Check, X, ShieldAlert, Users, Plus, Trash2, Clock, UserCheck, RefreshCw, LayoutTemplate, Globe, ArrowRight, Lock, MessageSquare, ChevronLeft } from 'lucide-react';
+import { Sparkles, History, GraduationCap, LayoutGrid, Filter, Edit2, Check, X, ShieldAlert, Users, Plus, Trash2, Clock, UserCheck, RefreshCw, LayoutTemplate, Globe, ArrowRight, Lock, MessageSquare, ChevronLeft, Image as ImageIcon } from 'lucide-react';
 
 const ADMIN_EMAIL = 'manhbnc2026@gmail.com';
 
@@ -445,6 +445,38 @@ export default function App() {
     }
   };
 
+  const handleUpdateMissingImages = async () => {
+    const wordsWithNoImage = words.filter(w => !w.imageUrl || String(w.imageUrl).includes('undefined') || String(w.imageUrl).trim() === '');
+    if (wordsWithNoImage.length === 0) {
+      toast('Tất cả từ vựng hiện tại đều đã có hình ảnh.');
+      return;
+    }
+
+    if (!window.confirm(`Tìm thấy ${wordsWithNoImage.length} từ chưa có hình ảnh. Bạn có muốn cập nhật tự động bằng AI không?`)) return;
+
+    setIsProcessing(true);
+    setProgress(0);
+    let updatedCount = 0;
+
+    try {
+      for (const word of wordsWithNoImage) {
+        const prompt = word.imagePrompt || word.text;
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random() * 1000000)}`;
+        
+        await updateDoc(doc(db, 'words', word.id), { imageUrl });
+        updatedCount++;
+        setProgress(Math.round((updatedCount / wordsWithNoImage.length) * 100));
+      }
+      toast.success(`Đã cập nhật hình ảnh thành công cho ${updatedCount} từ vựng!`);
+    } catch (error) {
+      console.error(error);
+      toast.error('Có lỗi xảy ra khi cập nhật hình ảnh.');
+    } finally {
+      setIsProcessing(false);
+      setProgress(0);
+    }
+  };
+
   const AdminPanel = () => (
     <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="space-y-10">
       <div className="flex items-center justify-between">
@@ -650,6 +682,17 @@ export default function App() {
                         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                           <div className="flex items-center gap-3"><div className="h-1 w-12 bg-indigo-600 rounded-full" /><h2 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-3">Thư viện từ vựng<span className="text-xs font-mono font-bold bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100">{words.length} từ</span></h2></div>
                           <div className="flex items-center gap-4">
+                            {words.some(w => !w.imageUrl || String(w.imageUrl).includes('undefined') || String(w.imageUrl).trim() === '') && (
+                              <button
+                                onClick={handleUpdateMissingImages}
+                                disabled={isProcessing}
+                                className="flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-widest bg-amber-50 text-amber-600 border border-amber-200 hover:bg-white hover:shadow-lg hover:shadow-amber-100 transition-all disabled:opacity-50 group"
+                                title="Cập nhật hình ảnh cho các từ còn thiếu"
+                              >
+                                <RefreshCw size={14} className={cn(isProcessing && "animate-spin", "group-hover:rotate-180 transition-transform duration-500")} />
+                                {isProcessing ? `Xử lý ${progress}%` : 'Sửa ảnh lỗi/thiếu'}
+                              </button>
+                            )}
                             <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-gray-100 shadow-sm">
                               <Filter size={14} className="text-indigo-400" />
                               {isEditingName ? (

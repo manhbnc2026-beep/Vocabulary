@@ -294,13 +294,21 @@ export function Quiz({ words, onClose }: QuizProps) {
             {/* Front */}
             <div className="absolute inset-0 backface-hidden bg-white rounded-[3rem] shadow-2xl border border-indigo-50 flex flex-col items-center justify-center p-8 text-center overscroll-contain overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-2 bg-indigo-600" />
-              <div className="relative mb-6">
-                <img 
-                  src={currentWord.imageUrl} 
-                  alt={currentWord.text} 
-                  referrerPolicy="no-referrer"
-                  className="w-32 h-32 rounded-3xl object-cover shadow-lg"
-                />
+              <div className="relative mb-6 w-32 h-32 flex items-center justify-center">
+                {currentWord.imageUrl ? (
+                  <img 
+                    src={currentWord.imageUrl} 
+                    alt={currentWord.text} 
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full rounded-3xl object-cover shadow-lg"
+                  />
+                ) : (
+                  <div className="w-full h-full rounded-3xl bg-indigo-50 border border-indigo-100 flex items-center justify-center p-2 text-center shadow-inner">
+                    <span className="text-indigo-600 font-black text-xl uppercase tracking-widest break-words leading-tight">
+                      {currentWord.text}
+                    </span>
+                  </div>
+                )}
               </div>
               <h3 className="text-6xl font-black text-gray-900 tracking-tighter mb-4">{currentWord.text}</h3>
               <p className="text-xl font-mono text-indigo-400">{currentWord.phonetic}</p>

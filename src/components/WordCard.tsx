@@ -36,19 +36,31 @@ export function WordCard({ word, onDelete, onEdit }: WordCardProps) {
       exit={{ opacity: 0, scale: 0.9 }}
       className="group relative overflow-hidden rounded-[2rem] bg-white border border-gray-100 shadow-xl shadow-gray-200/40 hover:shadow-2xl hover:shadow-indigo-100/50 transition-all duration-500"
     >
-      <div className="aspect-square relative overflow-hidden">
-        {word.imageUrl ? (
-          <img
-            src={word.imageUrl}
-            alt={word.text}
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <div className="h-full w-full bg-gray-50 flex items-center justify-center">
-            <span className="text-gray-200 font-bold text-4xl uppercase">{word.text[0]}</span>
-          </div>
-        )}
+        <div className="aspect-square relative flex items-center justify-center bg-gray-50 overflow-hidden">
+          {word.imageUrl ? (
+            <img
+              src={word.imageUrl}
+              alt={word.text}
+              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = `https://placehold.co/600x600/f3f4f6/6366f1?text=${word.text}`;
+              }}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center p-6 text-center w-full h-full bg-indigo-50/30">
+              <span className="text-indigo-600 font-black text-4xl tracking-tighter uppercase break-words px-4 leading-tight">
+                {word.text}
+              </span>
+              <div className="mt-4 flex items-center gap-2">
+                <div className="h-0.5 w-4 bg-indigo-200 rounded-full" />
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-300">
+                  Vocabulary
+                </span>
+                <div className="h-0.5 w-4 bg-indigo-200 rounded-full" />
+              </div>
+            </div>
+          )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         
         <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
