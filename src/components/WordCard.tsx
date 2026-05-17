@@ -75,11 +75,11 @@ export function WordCard({ word, onEdit }: WordCardProps) {
         </div>
       </div>
 
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-2">
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-2">
             <h3 className={cn(
-              "text-2xl font-black tracking-tight",
+              "text-xl font-black tracking-tight",
               getPosColor(word.partOfSpeech).split(' ').find(c => c.startsWith('text-'))
             )}>
               {word.text}
@@ -87,38 +87,36 @@ export function WordCard({ word, onEdit }: WordCardProps) {
             <button 
               onClick={speak}
               className={cn(
-                "p-1.5 rounded-full transition-colors",
+                "p-1 rounded-full transition-colors",
                 getPosColor(word.partOfSpeech).split(' ').find(c => c.startsWith('text-'))?.replace('text-', 'hover:bg-') + '/10',
                 getPosColor(word.partOfSpeech).split(' ').find(c => c.startsWith('text-'))
               )}
             >
-              <Headphones size={18} />
+              <Headphones size={16} />
             </button>
           </div>
           <span className={cn(
-            "text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border transition-colors",
+            "text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-md border transition-colors",
             getPosColor(word.partOfSpeech)
           )}>
             {word.partOfSpeech}
           </span>
         </div>
 
-        <p className="text-sm font-mono font-medium text-indigo-500 mb-4">{word.phonetic}</p>
+        <p className="text-[11px] font-mono font-medium text-indigo-500 mb-2.5">{word.phonetic}</p>
         
-        <div className="mb-6">
-          <p className="text-base font-bold text-gray-800 leading-snug">
+        <div className="mb-3">
+          <p className="text-sm font-bold text-gray-800 leading-snug line-clamp-2">
             {word.meaningVi}
           </p>
         </div>
 
-        <div className="space-y-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-gray-300">Context Examples</p>
-          {word.examples.map((ex, i) => {
-             const [en, vi] = ex.split(' (');
-             const cleanVi = vi ? ` (${vi}` : '';
+        <div className="space-y-2">
+          {word.examples.slice(0, 2).map((ex, i) => {
+             const [en] = ex.split(' (');
              return (
-               <div key={i} className="group/ex flex items-start justify-between gap-2 text-xs text-gray-600 pl-3 border-l-2 border-indigo-100 italic transition-colors hover:border-indigo-400">
-                 <p className="flex-1">{ex}</p>
+               <div key={i} className="group/ex flex items-start justify-between gap-1 text-[10px] text-gray-500 pl-2 border-l-2 border-indigo-100 italic transition-colors hover:border-indigo-400">
+                 <p className="flex-1 line-clamp-2">{ex}</p>
                  <button 
                     onClick={() => {
                       const utterance = new SpeechSynthesisUtterance(en.trim());
@@ -129,7 +127,7 @@ export function WordCard({ word, onEdit }: WordCardProps) {
                     className="p-1 rounded-full bg-gray-50 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all opacity-0 group-hover/ex:opacity-100"
                     title="Nghe ví dụ"
                   >
-                    <Headphones size={12} />
+                    <Headphones size={10} />
                   </button>
                </div>
              );

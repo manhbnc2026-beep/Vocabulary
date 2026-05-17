@@ -629,28 +629,62 @@ export default function App() {
               <h2 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">Chào mừng quay lại, {user.displayName?.split(' ')[0]}</h2>
               <p className="text-gray-500 font-medium leading-relaxed">Chọn một ứng dụng từ hệ sinh thái để bắt đầu công việc của bạn.</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
               {ecosystemApps.map(app => {
                 const isAvailable = authorizedApps.includes(app.id) || isAdmin;
                 return (
-                  <motion.button key={app.id} whileHover={{ y: -8 }} onClick={() => isAvailable && setCurrentAppId(app.id)} className={cn("group relative text-left p-8 rounded-[2.5rem] border bg-white transition-all", isAvailable ? "border-gray-100 shadow-xl shadow-gray-200/50 hover:shadow-indigo-100" : "border-gray-50 opacity-60 cursor-not-allowed grayscale")}>
-                    <div className={cn("w-16 h-16 rounded-3xl flex items-center justify-center mb-6 shadow-lg", app.color === 'indigo' ? "bg-indigo-600 text-white shadow-indigo-100" : app.color === 'emerald' ? "bg-emerald-500 text-white shadow-emerald-100" : app.color === 'amber' ? "bg-amber-500 text-white shadow-amber-100" : app.color === 'rose' ? "bg-rose-500 text-white shadow-rose-100" : "bg-violet-600 text-white shadow-violet-100")}>{getIcon(app.icon, 32)}</div>
-                    <h3 className="text-2xl font-black text-gray-900 mb-2 tracking-tight flex items-center gap-2">{app.name}{!isAvailable && <Lock size={16} className="text-gray-400" />}</h3>
-                    <p className="text-gray-500 font-medium text-sm leading-relaxed mb-8">{app.description}</p>
-                    <div className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-indigo-600 group-hover:gap-3 transition-all">{isAvailable ? 'Truy cập ngay' : 'Chưa được cấp quyền'}<ArrowRight size={16} /></div>
+                  <motion.button 
+                    key={app.id} 
+                    whileHover={{ y: -4, scale: 1.02 }} 
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => isAvailable && setCurrentAppId(app.id)} 
+                    className={cn(
+                      "group relative text-left p-5 rounded-[2rem] border bg-white transition-all flex flex-col items-center text-center",
+                      isAvailable 
+                        ? "border-gray-100 shadow-md shadow-gray-200/30 hover:shadow-xl hover:shadow-indigo-100 hover:border-indigo-100" 
+                        : "border-gray-50 opacity-60 cursor-not-allowed grayscale"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-12 h-12 rounded-2xl flex items-center justify-center mb-4 shadow-lg transition-transform group-hover:scale-110",
+                      app.color === 'indigo' ? "bg-indigo-600 text-white shadow-indigo-100" : 
+                      app.color === 'emerald' ? "bg-emerald-500 text-white shadow-emerald-100" : 
+                      app.color === 'amber' ? "bg-amber-500 text-white shadow-amber-100" : 
+                      app.color === 'rose' ? "bg-rose-500 text-white shadow-rose-100" : 
+                      "bg-violet-600 text-white shadow-violet-100"
+                    )}>
+                      {getIcon(app.icon, 24)}
+                    </div>
+                    <h3 className="text-sm font-black text-gray-900 mb-1 tracking-tight flex items-center gap-1 justify-center w-full">
+                      <span className="truncate">{app.name}</span>
+                      {!isAvailable && <Lock size={12} className="text-gray-400 shrink-0" />}
+                    </h3>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest line-clamp-1 mb-4">{app.id}</p>
+                    
+                    <div className="mt-auto w-full pt-3 border-t border-gray-50 flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-[0.15em] text-indigo-600 opacity-0 group-hover:opacity-100 transition-all">
+                      {isAvailable ? 'Mở ngay' : 'Khóa'}<ArrowRight size={10} />
+                    </div>
+
                     {!isAvailable && (
-                      <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] rounded-[2.5rem] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2"><Lock size={14} />Yêu cầu quyền</div>
+                      <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] rounded-[2rem] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="bg-gray-900 text-white px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-black/20">
+                          <Lock size={10} /> Yêu cầu quyền
+                        </div>
                       </div>
                     )}
                   </motion.button>
                 );
               })}
               {isAdmin && (
-                <button onClick={() => setActiveTab('admin')} className="p-8 rounded-[2.5rem] border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-center hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group">
-                  <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mb-4 group-hover:bg-white transition-colors"><Users className="text-gray-400 group-hover:text-indigo-600" size={32} /></div>
-                  <h3 className="font-black text-gray-900 mb-1">Quản lý User</h3>
-                  <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Thiết lập quyền hệ sinh thái</p>
+                <button 
+                  onClick={() => setActiveTab('admin')} 
+                  className="p-5 rounded-[2rem] border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-center hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group aspect-square"
+                >
+                  <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mb-3 group-hover:bg-white transition-colors shadow-sm">
+                    <Users className="text-gray-400 group-hover:text-indigo-600" size={20} />
+                  </div>
+                  <h3 className="text-[11px] font-black text-gray-900 mb-0.5">Quản lý User</h3>
+                  <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest">Hệ sinh thái</p>
                 </button>
               )}
             </div>
