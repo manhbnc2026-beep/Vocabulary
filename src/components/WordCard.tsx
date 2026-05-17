@@ -115,7 +115,7 @@ export function WordCard({ word, onEdit }: WordCardProps) {
           {word.examples.slice(0, 2).map((ex, i) => {
              const [en] = ex.split(' (');
              return (
-               <div key={i} className="group/ex flex items-start justify-between gap-1 text-[10px] text-gray-500 pl-2 border-l-2 border-indigo-100 italic transition-colors hover:border-indigo-400">
+               <div key={i} className="group/ex flex items-start justify-between gap-1 text-sm text-gray-500 pl-2 border-l-2 border-indigo-100 italic transition-colors hover:border-indigo-400">
                  <p className="flex-1 line-clamp-2">{ex}</p>
                  <button 
                     onClick={() => {

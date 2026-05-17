@@ -197,7 +197,7 @@ export function WordEditModal({ word, isOpen, onClose, onSave }: WordEditModalPr
                       value={ex}
                       onChange={(e) => handleExampleChange(i, e.target.value)}
                       rows={2}
-                      className="w-full rounded-xl bg-gray-50 border border-gray-100 px-4 py-2 text-xs font-medium italic text-gray-600 focus:outline-none resize-none"
+                      className="w-full rounded-xl bg-gray-50 border border-gray-100 px-4 py-2 text-sm font-medium italic text-gray-600 focus:outline-none resize-none"
                     />
                   </div>
                 ))}
