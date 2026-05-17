@@ -39,7 +39,7 @@ export function WordEditModal({ word, isOpen, onClose, onSave }: WordEditModalPr
     setIsRegenerating(true);
     try {
       const prompt = formData.imagePrompt || formData.text;
-      const newUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random() * 1000000)}`;
+      const newUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=256&height=256&nologo=true&seed=${Math.floor(Math.random() * 1000000)}`;
       setFormData(prev => ({ ...prev, imageUrl: newUrl }));
       toast.success('Đã làm mới hình ảnh!');
     } catch (error) {

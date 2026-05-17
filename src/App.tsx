@@ -380,7 +380,7 @@ export default function App() {
       for (const item of analyzed) {
         batch.set(doc(collection(db, 'words')), {
           ...item,
-          imageUrl: `https://image.pollinations.ai/prompt/${encodeURIComponent(item.imagePrompt || item.text)}?width=1024&height=1024&nologo=true`,
+          imageUrl: `https://image.pollinations.ai/prompt/${encodeURIComponent(item.imagePrompt || item.text)}?width=256&height=256&nologo=true`,
           listId: listRef.id,
           userId: user.uid,
           createdAt: serverTimestamp()
@@ -467,7 +467,7 @@ export default function App() {
           prompt = `A vivid, high-quality photograph or 3D digital art representing the English word "${word.text}", showing the concept in clear context. Minimalist, centered, professional lighting.`;
         }
         
-        const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random() * 1000000)}`;
+        const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=256&height=256&nologo=true&seed=${Math.floor(Math.random() * 1000000)}`;
         
         await updateDoc(doc(db, 'words', word.id), { 
           imageUrl,
@@ -480,6 +480,51 @@ export default function App() {
     } catch (error) {
       console.error(error);
       toast.error('Có lỗi xảy ra khi cập nhật hình ảnh.');
+    } finally {
+      setIsProcessing(false);
+      setProgress(0);
+    }
+  };
+
+  const handleOptimizeAllImages = async () => {
+    const wordsToOptimize = words.filter(w => 
+      w.imageUrl && 
+      typeof w.imageUrl === 'string' &&
+      (w.imageUrl.includes('width=1024') || w.imageUrl.includes('width=512'))
+    );
+
+    if (wordsToOptimize.length === 0) {
+      toast.success('Tất cả hình ảnh đã được tối ưu dung lượng (256px)!');
+      return;
+    }
+
+    if (!window.confirm(`Tìm thấy ${wordsToOptimize.length} từ đang sử dụng ảnh độ phân giải cao. Bạn có muốn hạ xuống 256px để tối ưu dung lượng và tốc độ tải không?`)) return;
+
+    setIsProcessing(true);
+    setProgress(0);
+    let updatedCount = 0;
+
+    try {
+      const batchSize = 10;
+      for (let i = 0; i < wordsToOptimize.length; i += batchSize) {
+        const batch = writeBatch(db);
+        const chunk = wordsToOptimize.slice(i, i + batchSize);
+        
+        chunk.forEach(word => {
+          const newUrl = String(word.imageUrl)
+            .replace('width=1024', 'width=256').replace('height=1024', 'height=256')
+            .replace('width=512', 'width=256').replace('height=512', 'height=256');
+          batch.update(doc(db, 'words', word.id), { imageUrl: newUrl });
+        });
+        
+        await batch.commit();
+        updatedCount += chunk.length;
+        setProgress(Math.round((updatedCount / wordsToOptimize.length) * 100));
+      }
+      toast.success(`Đã tối ưu dung lượng thành công cho ${updatedCount} từ vựng!`);
+    } catch (error) {
+      console.error(error);
+      toast.error('Có lỗi xảy ra khi tối ưu hình ảnh.');
     } finally {
       setIsProcessing(false);
       setProgress(0);
@@ -734,6 +779,17 @@ export default function App() {
                               >
                                 <RefreshCw size={14} className={cn(isProcessing && "animate-spin", "group-hover:rotate-180 transition-transform duration-500")} />
                                 {isProcessing ? `Xử lý ${progress}%` : 'Sửa ảnh lỗi/thiếu'}
+                              </button>
+                            )}
+                            {activeTab === 'library' && words.some(w => String(w.imageUrl).includes('width=1024') || String(w.imageUrl).includes('width=512')) && (
+                              <button
+                                onClick={handleOptimizeAllImages}
+                                disabled={isProcessing}
+                                className="flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-black uppercase tracking-widest bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-white hover:shadow-lg hover:shadow-indigo-100 transition-all disabled:opacity-50 group"
+                                title="Hạ độ phân giải toàn bộ ảnh xuống 256px để tiết kiệm dung lượng"
+                              >
+                                <ImageIcon size={14} className={cn(isProcessing && "animate-spin")} />
+                                {isProcessing ? `Tối ưu ${progress}%` : 'Tối ưu dung lượng'}
                               </button>
                             )}
                             <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-gray-100 shadow-sm">
